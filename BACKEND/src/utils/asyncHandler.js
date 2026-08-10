@@ -1,4 +1,4 @@
-export const asyncHandler = (fn)=>{
+ const asyncHandler = (fn)=>{
     return async (req,res,next)=>{
         try {
             await fn(req,res,next)
@@ -14,3 +14,5 @@ export const asyncHandler = (fn)=>{
         }
     }
 }
+
+export {asyncHandler}
