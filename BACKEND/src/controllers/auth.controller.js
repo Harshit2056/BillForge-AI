@@ -4,6 +4,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken"
 import { User } from "../models/user.model.js";
 import { blackListedToken } from "../models/blackListedToken.model.js";
+import { Shop } from "../models/shop.model.js";
 
 const generateTokens = async (userId)=>{
     try {
@@ -19,31 +20,43 @@ const generateTokens = async (userId)=>{
 };
 
 const userRegister = asyncHandler(async(req,res)=>{
-    const{name,email,password} = req.body
+    const {shopName,address,taxId,ownerName,email,password} = req.body
+    const { street, city, state, zipcode } = req.body.address;
 
-    if(!name || !email || !password){
-        throw new apiError(400,"name,email,password is required")
+    if(!shopName || !ownerName || !email ||!password){
+        throw new apiError(400,"shopName,ownerName,email,password is required")
+    }
+
+    if(!street || !city || !state || !zipcode){
+        throw new apiError(400,"street,city,state,zipcode is required")
     }
 
     const existingUser = await User.findOne({email:email})
-
     if(existingUser){
         throw new apiError(400,"user already exists")
     }
 
+    const shop = await Shop.create({
+        shopName:shopName,
+        address:{
+            street:street,
+            city:city,
+            state:state,
+            zipcode:zipcode
+        },
+        taxId:taxId
+    })
     const user = await User.create({
-        name:name,
+        name:ownerName,
         email:email,
-        password:password
+        password:password,
+        role:"owner",
+        shopId:shop._id
     })
 
-    if(!user){
-        throw new apiError(400,"user not created")
-    }
-
     return res
-    .status(200)
-    .json(new apiResponse(true,user,"user created successfully"))
+    .status(201)
+    .json(new apiResponse(201,user,"user and shop registration successfully"))
 });
 
 const userLogin = asyncHandler(async(req,res)=>{

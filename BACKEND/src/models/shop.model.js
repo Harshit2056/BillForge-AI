@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 
 const shopSchema = new mongoose.Schema({
-    name:{
+    shopName:{
         type:String,
         required:true,
         trim:true
@@ -36,7 +36,8 @@ const shopSchema = new mongoose.Schema({
     },
 
     taxId:{
-        type:string
+        type:String,
+        trim:true
     },
 
     isActive:{

@@ -2,7 +2,7 @@ import { blackListedToken } from "../models/blackListedToken.model.js"
 import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js"
 
-const verifyJWT = asyncHandler(async(req,res,next)=>{
+export const verifyJWT = asyncHandler(async(req,res,next)=>{
     try {
         const token = req.cookie.refreshToken || req.header("Authorization").replace("Bearer ","")
     
