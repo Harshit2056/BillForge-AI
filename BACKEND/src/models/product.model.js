@@ -11,7 +11,8 @@ const productSchema = new mongoose.Schema({
     },
     sku:{
         type:String,
-        required:true
+        required:true,
+        index:true
     },
     name:{
         type:String,
