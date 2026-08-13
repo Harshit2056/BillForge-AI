@@ -2,6 +2,7 @@ import mongoose, { mongo } from"mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
+
 const userSchema = new mongoose.Schema({
 
     shopId:{
@@ -39,11 +40,12 @@ const userSchema = new mongoose.Schema({
 },{timestamps:true})
 
 userSchema.pre("save",async function() {
-    if(!this.isModified(password)){
+    if(!this.isModified("password")){
         return;
     }
 
-    this.password = await bcrypt.hash(this.password);
+    this.password = await bcrypt.hash(this.password,10);
+   
 })
 
 userSchema.methods.isPasswordCorrect =async function(password){
@@ -56,7 +58,7 @@ userSchema.methods.generateRefreshToken = async function(){
         },
         process.env.REFRESH_TOKEN_SECRET_KEY,
         {
-            expiresIn:REFRESH_TOKEN_EXPIRY_DATE
+            expiresIn:process.env.REFRESH_TOKEN_EXPIRY_DATE
         }
     )
 }
@@ -67,7 +69,7 @@ userSchema.methods.generateAccessToken = async function(){
         },
         process.env.ACCESS_TOKEN_SECRET_KEY,
         {
-            expiresIn:ACCESS_TOKEN_EXPIRY_DATE
+            expiresIn:process.env.ACCESS_TOKEN_EXPIRY_DATE
         }
     )
 }

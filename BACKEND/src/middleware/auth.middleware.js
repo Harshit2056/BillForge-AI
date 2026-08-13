@@ -1,10 +1,13 @@
 import { blackListedToken } from "../models/blackListedToken.model.js"
 import { apiError } from "../utils/apiError.js"
 import { apiResponse } from "../utils/apiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import jwt from "jsonwebtoken";
+import { User } from "../models/user.model.js";
 
 export const verifyJWT = asyncHandler(async(req,res,next)=>{
     try {
-        const token = req.cookie.refreshToken || req.header("Authorization").replace("Bearer ","")
+        const token = req.cookies.refreshToken || req.header("Authorization").replace("Bearer ","")
     
         if(!token){
             throw new apiError(400,"token is required ")

@@ -20,7 +20,7 @@ const generateTokens = async (userId)=>{
 };
 
 const userRegister = asyncHandler(async(req,res)=>{
-    const {shopName,address,taxId,ownerName,email,password} = req.body
+    const {shopName,taxId,ownerName,email,password} = req.body
     const { street, city, state, zipcode } = req.body.address;
 
     if(!shopName || !ownerName || !email ||!password){
@@ -35,9 +35,18 @@ const userRegister = asyncHandler(async(req,res)=>{
     if(existingUser){
         throw new apiError(400,"user already exists")
     }
+    
+    const slug= shopName.toLowerCase().replace(/\s+/g, "-")
+
+    const existingShop = await Shop.findOne({ slug });
+
+    if (existingShop) {
+        throw new apiError(400, "Shop already exists");
+    }
 
     const shop = await Shop.create({
         shopName:shopName,
+        slug:slug,
         address:{
             street:street,
             city:city,
@@ -78,9 +87,9 @@ const userLogin = asyncHandler(async(req,res)=>{
         throw new apiError(400,"password is incorrect")
     }
 
-    const {refreshToken,accessToken} = await user.generateTokens(user._id)
+    const {refreshToken,accessToken} = await generateTokens(user._id)
 
-    const user = await User.findById(user._id).select("-password")
+    const loggedInUser = await User.findById(user._id).select("-password")
 
     const options = {
         httpOnly:true,
@@ -91,7 +100,7 @@ const userLogin = asyncHandler(async(req,res)=>{
     .status(200)
     .cookie("refreshToken",refreshToken,options)
     .cookie("accessToken",accessToken,options)
-    .json(new apiResponse(200,user,"user login successfully"))
+    .json(new apiResponse(200,loggedInUser,"user login successfully"))
     
 })
 

@@ -106,12 +106,125 @@ const updateProduct = asyncHandler(async(req,res)=>{
         throw new apiError(400,"only owner can update the products")
     }
 
-    const{name,price,category,lowStockThreshold,taxRate,sku,shopId}=req.body;
+    const{name,price,lowStockThreshold,taxRate}=req.body;
 
-    const product = await Product.findByIdAndUpdate
+    const {id}= req.params
+
+    const product = await Product.findOneAndUpdate(
+        {
+            shopId:req.shopId,
+            _id:id
+        },
+        {
+            $set:{
+                ...(name !== undefined && {name}),
+                ...(price !== undefined && {price}),
+                ...(lowStockThreshold !== undefined &&{lowStockThreshold}),
+                ...(taxRate !== undefined && {taxRate})
+            }
+        },
+        {
+            new:true
+        }
+    )
+
+    if (!product) {
+        throw new ApiError(404, "Product not found");
+    }
+
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            product,
+            "Product updated successfully"
+        )
+    );    
 });
 
-export {createProduct,getProducts,getProductById,updateProduct}
+const adjustStockQuantity = asyncHandler(async (req, res) => {
+
+    if (req.user.role !== "owner") {
+        throw new ApiError(403, "Only owner can adjust stock");
+    }
+
+    const { id } = req.params;
+    const { quantity, reason } = req.body;
+
+    if (quantity === undefined || quantity === 0) {
+        throw new ApiError(400, "Valid quantity is required");
+    }
+
+    const product = await Product.findOneAndUpdate(
+        {
+            _id: id,
+            shopId: req.shopId,
+            isActive: true
+        },
+        {
+            $inc: {
+                stockQuantity: quantity
+            }
+        },
+        {
+            new: true,
+            runValidators: true
+        }
+    );
+
+    if (!product) {
+        throw new ApiError(404, "Product not found");
+    }
+
+    return res
+    .status(200)
+    .json(    
+        new ApiResponse(
+            200,
+            {
+                product,
+                reason
+            },
+            "Stock quantity adjusted successfully"
+        )
+    );    
+});
+
+const deleteProduct = asyncHandler(async(req,res)=>{
+    const {id}= req.params;
+
+    const product = await Product.findOneAndUpdate(
+        {
+            shopId:req.shopId,
+            _id: id
+        },
+        {
+            $set:{
+                isActive:false
+            }
+        },
+        {
+            new:true
+        }
+
+    )
+
+    return res
+    .status(200)
+    .json(    
+        new ApiResponse(
+            200,
+            {product},
+            "product deletion successfully"
+        )
+    ); 
+
+    
+});
+
+export {createProduct,getProducts,getProductById,updateProduct,adjustStockQuantity,deleteProduct}
 
 
 
