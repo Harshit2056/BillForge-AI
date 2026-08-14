@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2"
 
 const invoiceItemSchema = new mongoose.Schema(
     {
@@ -123,5 +124,9 @@ invoiceSchema.index({
     shopId: 1,
     createdAt: -1
 });
+
+invoiceSchema.plugin(mongoosePaginate);
+
+
 
 export const Invoice = mongoose.model("Invoice", invoiceSchema);
