@@ -1,5 +1,5 @@
+import { Shop } from "../models/shop.model.js";
 import {User} from "../models/user.model.js"
-import {Shop} from "../models/user.model.js"
 import { apiError } from "../utils/apiError.js"
 
 export const identifyTenant = async(req,res,next)=>{

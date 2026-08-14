@@ -1,4 +1,4 @@
-import { asyncHandler } from "../utils/asynchandler";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { Shop } from "../models/shop.model.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { apiError } from "../utils/apiError.js";
@@ -80,9 +80,15 @@ const addStaffMember = asyncHandler(async(req,res)=>{
         shopId:req.shopId
     })
 
+    const createdUser = await User.findById(user._id).select("-password -refreshToken")
+
+    if(!createdUser){
+        throw new apiError(400,"no createdUser")
+    }
+
     return res
     .status(201)
-    .json(new apiResponse(201,user,"staff member added successfully"))
+    .json(new apiResponse(201,createdUser,"staff member added successfully"))
 });
 
 const getAllStaffMembers = asyncHandler(async(req,res)=>{
@@ -91,7 +97,7 @@ const getAllStaffMembers = asyncHandler(async(req,res)=>{
         throw new apiError(403,"only owner can get all staff members")
     }
 
-    const staffMembers = await User.find({shopId:req.shopId,role:"staff"}).select("-password")
+    const staffMembers = await User.find({shopId:req.shopId,role:"staff"}).select("-password -refreshToken")
 
     return res
     .status(200)
@@ -105,13 +111,22 @@ const removeStaffMember = asyncHandler(async(req,res)=>{
     }
 
     const {staffId} = req.params
+    
 
-    const staffMember = await User.findOneAndDelete({
+    const staffMember = await User.findOneAndUpdate({
         _id:staffId,
         shopId:req.shopId,
         role:"staff",
-        isActive:false
-    })
+        isActive: true
+    },
+    {
+        $set:{
+            isActive:false
+        }
+    },
+    {
+        new:true
+    }).select("-password -refreshToken")
 
     if(!staffMember){
         throw new apiError(404,"staff member not found")

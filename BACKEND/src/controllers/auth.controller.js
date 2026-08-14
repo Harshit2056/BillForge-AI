@@ -9,8 +9,11 @@ import { Shop } from "../models/shop.model.js";
 const generateTokens = async (userId)=>{
     try {
         const user = await User.findById(userId)
-        const refreshToken = user.generateRefreshToken(userId)
-        const accessToken = user.generateAccessToken(userId)
+        const refreshToken =await user.generateRefreshToken(userId)
+        const accessToken =await user.generateAccessToken(userId)
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave:false})
 
         return {accessToken,refreshToken}
         
@@ -63,9 +66,17 @@ const userRegister = asyncHandler(async(req,res)=>{
         shopId:shop._id
     })
 
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshTokens"
+    )
+
+    if(!createdUser){
+        throw new ApiError(500,"something went wrong while registering the user")
+    }
+
     return res
     .status(201)
-    .json(new apiResponse(201,user,"user and shop registration successfully"))
+    .json(new apiResponse(201,createdUser,"user and shop registration successfully"))
 });
 
 const userLogin = asyncHandler(async(req,res)=>{
@@ -89,7 +100,7 @@ const userLogin = asyncHandler(async(req,res)=>{
 
     const {refreshToken,accessToken} = await generateTokens(user._id)
 
-    const loggedInUser = await User.findById(user._id).select("-password")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
         httpOnly:true,
@@ -102,10 +113,14 @@ const userLogin = asyncHandler(async(req,res)=>{
     .cookie("accessToken",accessToken,options)
     .json(new apiResponse(200,loggedInUser,"user login successfully"))
     
-})
+});
 
 const userLogout = asyncHandler(async(req,res)=>{
-    await blackListedToken.create({token:req.token})
+
+    
+    if(req.token){
+        await blackListedToken.create({token:req.token})
+    }
 
     await User.findByIdAndUpdate(
         req.user._id,
@@ -125,12 +140,53 @@ const userLogout = asyncHandler(async(req,res)=>{
     .clearCookie("refreshToken",options)
     .clearCookie("accessToken",options)
     .json(new apiResponse(200,{},"user logout successfully"))
-})
+});
 
-const getCurrentUser = asyncHandler(async(req,res)=>{
+const refreshAccessToken = asyncHandler(async(req,res)=>{
+    const incomingRefreshToken = req.cookies.refreshToken || req.header("Authorization").replace("Bearer ","")
+    
+    if(!incomingRefreshToken){
+        throw new apiError(400,"token is required ")
+    }
+
+    const decodedToken = await jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET_KEY)
+
+    const user = await User.findById(decodedToken._id);
+
+    if(!decodedToken){
+        throw new apiError(401,"imvalid refresh token")
+    }
+
+    if(incomingRefreshToken !== user.refreshToken){
+        throw new apiError(401,"refresh token is expired or used")
+    }
+
+    const options = {
+        httpOnly:true,
+        secure:true
+    }
+    
+    const {accessToken , refreshToken} = await generateTokens(user._id)
+    
     return res
     .status(200)
-    .json(new apiResponse(200,req.user,"current user fetched successfully"))
-})
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options) 
+    .json(
+        new apiResponse(
+            200,
+            {accessToken,refreshToken},
+            "access token refreshed"
+        )
+    )
+});
 
-export {userRegister,userLogin,userLogout,getCurrentUser}
+const getCurrentUser = asyncHandler(async(req,res)=>{
+    const user = await User.findById(req.user._id).select("-refreshToken -password")
+
+    return res
+    .status(200)
+    .json(new apiResponse(200,user,"current user fetched successfully"))
+});
+
+export {userRegister,userLogin,userLogout,getCurrentUser,refreshAccessToken}

@@ -68,8 +68,8 @@ const getProducts= asyncHandler(async (req, res) => {
     const result = await Product.paginate(query, options);
 
     return res.status(200).json(
-        new ApiResponse(
-            200,
+        new apiResponse(
+            200, 
             {result},
             "Products fetched successfully"
         )
@@ -91,7 +91,7 @@ const getProductById = asyncHandler(async(req,res)=>{
     }
 
     return res.status(200).json(
-        new ApiResponse(
+        new apiResponse(
             200,
             {product},
             "Products fetched successfully"
@@ -129,14 +129,14 @@ const updateProduct = asyncHandler(async(req,res)=>{
     )
 
     if (!product) {
-        throw new ApiError(404, "Product not found");
+        throw new apiError(404, "Product not found");
     }
 
 
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new apiResponse(
             200,
             product,
             "Product updated successfully"
@@ -175,13 +175,13 @@ const adjustStockQuantity = asyncHandler(async (req, res) => {
     );
 
     if (!product) {
-        throw new ApiError(404, "Product not found");
+        throw new apiError(404, "Product not found");
     }
 
     return res
     .status(200)
     .json(    
-        new ApiResponse(
+        new apiResponse(
             200,
             {
                 product,
@@ -214,7 +214,7 @@ const deleteProduct = asyncHandler(async(req,res)=>{
     return res
     .status(200)
     .json(    
-        new ApiResponse(
+        new apiResponse(
             200,
             {product},
             "product deletion successfully"
