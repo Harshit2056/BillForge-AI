@@ -4,8 +4,10 @@ import { apiResponse } from "../utils/apiResponse.js";
 import {Invoice} from "../models/invoice.model.js"
 import {Product} from "../models/product.model.js"
 import PDFDocument from "pdfkit";
+import mongoose from "mongoose";
+import { Shop } from "../models/shop.model.js";
 
-const createInvoice = asyncHandler(async (req, res) => {n
+const createInvoice = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -33,7 +35,7 @@ const createInvoice = asyncHandler(async (req, res) => {n
       const { productId, quantity } = item;
 
       if (!productId || !quantity || quantity <= 0) {
-        throw new apiError("Invalid product or quantity specified.");
+        throw new apiError(400,"Invalid product or quantity specified.");
       }
 
       // Fetch product details within the session & tenant boundary
@@ -44,13 +46,13 @@ const createInvoice = asyncHandler(async (req, res) => {n
       }).session(session);
 
       if (!product) {
-        throw new apiError(`Product not found or unavailable (ID: ${productId}).`);
+        throw new apiError(400,`Product not found or unavailable (ID: ${productId}).`);
       }
 
       // Check stock availability
       if (product.stockQuantity < quantity) {
         throw new apiError(
-          `Insufficient stock for "${product.name}". Available: ${product.stockQuantity}, Requested: ${quantity}`
+          400,`Insufficient stock for "${product.name}". Available: ${product.stockQuantity}, Requested: ${quantity}`
         );
       }
 
@@ -70,7 +72,7 @@ const createInvoice = asyncHandler(async (req, res) => {n
       // If concurrency collision occurs (another thread took the last stock)
       if (stockUpdateResult.modifiedCount === 0) {
         throw new apiError(
-          `Stock conflict detected for "${product.name}". Please retry.`
+          400,`Stock conflict detected for "${product.name}". Please retry.`
         );
       }
 
@@ -130,11 +132,16 @@ const createInvoice = asyncHandler(async (req, res) => {n
     await session.commitTransaction();
     session.endSession();
 
-    return res.status(201).json(new apiResponse(200,{createInvoice},"Invoice generated successfully."));
+    return res.status(201).json(new apiResponse(200,{createdInvoice},"Invoice generated successfully."));
   } catch (error) {
     // 8. Rollback Transaction on ANY error (0% Stock Inconsistency Guarantee)
     await session.abortTransaction();
     session.endSession();
+
+    return res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || "Something went wrong"
+  });
     
   }
 });
@@ -230,7 +237,7 @@ const downloadInvoicePDF = asyncHandler(async(req,res)=>{
       .fillColor("#1e293b")
       .fontSize(20)
       .font("Helvetica-Bold")
-      .text(shop.name.toUpperCase(), 40, 45);
+      .text(shop.shopName.toUpperCase(), 40, 45);
 
     doc
       .fillColor("#64748b")

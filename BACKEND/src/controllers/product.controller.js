@@ -4,9 +4,9 @@ import {Product} from "../models/product.model.js";
 import {apiResponse} from "../utils/apiResponse.js";
 
 const createProduct= asyncHandler(async (req, res) => {
-    const{name,price,category,stockQunatity,lowStockThreshold,taxRate,sku,shopId}=req.body;
+    const{name,price,category,stockQuantity,lowStockThreshold,taxRate,sku,shopId}=req.body;
 
-    if(!name || price===undefined || !sku || stockQunatity===undefined){
+    if(!name || price===undefined || !sku || stockQuantity===undefined){
         throw new apiError(400,"required fields are missing");
     }
 
@@ -20,7 +20,7 @@ const createProduct= asyncHandler(async (req, res) => {
         name:name,
         price:price,
         category:category,
-        stockQunatity:stockQunatity,
+        stockQuantity:stockQuantity,
         lowStockThreshold:lowStockThreshold,
         shopId:req.shopId,
         taxRate:taxRate,  

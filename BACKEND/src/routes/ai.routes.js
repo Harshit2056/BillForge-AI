@@ -7,7 +7,7 @@ import { forecastStockDemand, getSmartPricingRecommendations, querySalesNaturalL
 
 const aiRouter = Router();
 
-aiRouter.route("/scan-receipt").post(upload.single(),scanReceiptOCR)
+aiRouter.route("/scan-receipt").post(upload.single("receipt"),scanReceiptOCR)
 aiRouter.route("/query").post(verifyJWT,identifyTenant,querySalesNaturalLanguage)
 aiRouter.route("/forecast").post(verifyJWT,identifyTenant,forecastStockDemand)
 aiRouter.route("/recommendations").post(verifyJWT,identifyTenant,getSmartPricingRecommendations)

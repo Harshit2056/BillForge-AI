@@ -1,16 +1,19 @@
 import { apiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asynchandler.js"
 import { apiResponse } from "../utils/apiResponse.js";
-import {Product} from "../models/Product.js";
-import {Invoice} from "../models/Invoice.js";
+import mongoose from "mongoose";
+
+import {Invoice} from "../models/invoice.model.js"
+import {Product} from "../models/product.model.js"
 import {
   parseReceiptImage,
   generateMongoPipeline,
   analyzeDemandForecast,
   generateBundleDiscounts
-} from "../services/geminiService.js";
+} from "../services/gemini.service.js";
 
 
+import fs from "fs";
 
 /**
  * 1. AI Receipt OCR Scanner
@@ -19,21 +22,30 @@ import {
  * @access  Protected (Owner, Admin, Manager)
  */
 export const scanReceiptOCR = asyncHandler(async (req, res) => {
-  try {
-    if (!req.file || !req.file.buffer) {
+ 
+    if (!req.file) {
       return res.status(400).json(new apiResponse(400,{},"Please upload a receipt image file."));
     }
 
-    // Process memory buffer directly with Gemini Vision API
+    let imageBuffer = req.file.buffer;
+    if (!imageBuffer && req.file.path) {
+      imageBuffer = fs.readFileSync(req.file.path);
+      // Clean up temporary file after reading
+      fs.unlink(req.file.path, () => {});
+    }
+
+    if (!imageBuffer) {
+      return res.status(400).json(new apiResponse(400,{},"Failed to read uploaded receipt file."));
+    }
+
+    // Process buffer directly with Gemini Vision API
     const extractedData = await parseReceiptImage(
-      req.file.buffer,
+      imageBuffer,
       req.file.mimetype
     );
 
     return res.status(200).json(new apiResponse(200,extractedData,"Receipt scanned and structured data extracted successfully."));
-  } catch (error) {
-    throw new apiError(400,error.message);
-  }
+  
 });
 
 /**
@@ -43,15 +55,12 @@ export const scanReceiptOCR = asyncHandler(async (req, res) => {
  * @access  Protected (Owner, Admin, Manager)
  */
 export const querySalesNaturalLanguage =asyncHandler( async (req, res) => {
-  try {
+  
     const { prompt } = req.body;
     const shopId = req.shopId; // Extracted via tenantMiddleware
 
     if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({
-        success: false,
-        message: "A text prompt is required."
-      });
+      throw new apiError(400, "A text prompt is required.");;
     }
 
     // Schema structure supplied as context for Gemini
@@ -96,9 +105,7 @@ export const querySalesNaturalLanguage =asyncHandler( async (req, res) => {
         results: queryResults,
         executedPipeline: securePipeline
       },"Natural language query executed successfully."));
-    } catch (error) {
-        throw new apiError(400,error.message);
-    }
+    
 });
 
 /**
@@ -108,7 +115,7 @@ export const querySalesNaturalLanguage =asyncHandler( async (req, res) => {
  * @access  Protected (Owner, Admin, Manager)
  */
 export const forecastStockDemand = asyncHandler(async (req, res) => {
-  try {
+  
     const shopId = req.shopId;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -171,9 +178,7 @@ export const forecastStockDemand = asyncHandler(async (req, res) => {
     const forecastReport = await analyzeDemandForecast(salesVelocityPayload);
 
     return res.status(200).json(new apiResponse(200,forecastReport,"Demand forecasting completed successfully."));
-  } catch (error) {
-    throw new apiError(400,error.message);
-  }
+  
 });
 
 /**
@@ -183,7 +188,7 @@ export const forecastStockDemand = asyncHandler(async (req, res) => {
  * @access  Protected (Owner, Admin, Manager)
  */
 export const getSmartPricingRecommendations = asyncHandler(async (req, res) => {
-  try {
+  
     const shopId = req.shopId;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -236,18 +241,14 @@ export const getSmartPricingRecommendations = asyncHandler(async (req, res) => {
     }));
 
     if (deadStock.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No stagnant or slow-moving inventory detected.",
-        data: { bundles: [] }
-      });
+      return res.status(200).json(
+      new apiResponse(200, { bundles: [] }, "No stagnant or slow-moving inventory detected.")
+      );
     }
 
     // 4. Generate dynamic bundling strategies via Gemini
     const bundleRecommendations = await generateBundleDiscounts(deadStock, topSellers);
 
     return res.status(200).json(new apiResponse(200,bundleRecommendations,"Dynamic bundle discount recommendations generated."));
-  } catch (error) {
-    throw new apiError(400,error.message);
-  }
+  
 });

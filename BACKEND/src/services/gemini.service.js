@@ -1,5 +1,6 @@
-import {ai} from "../config/gemini.js";
+import ai from "../config/ai.js";
 import { Type } from "@google/genai";
+
 
 /**
  * 1. AI Receipt OCR Scanner
@@ -11,7 +12,7 @@ export const parseReceiptImage = async (imageBuffer, mimeType = "image/jpeg") =>
                 If SKU or tax rate is not explicitly printed, make a reasonable estimate or leave SKU empty. Return only structured JSON.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: [
       {
         inlineData: {
@@ -70,7 +71,7 @@ Invoice Mongoose Schema Context:
 ${invoiceSchemaContext}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: [
       {
         text: `User Query: "${userQuery}"\nGenerate the MongoDB aggregation pipeline array for this query.`
@@ -97,7 +98,7 @@ Sales Velocity Data:
 ${JSON.stringify(salesVelocityData, null, 2)}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: [{ text: prompt }],
     config: {
       responseMimeType: "application/json",
@@ -155,7 +156,7 @@ Top Selling Items:
 ${JSON.stringify(topSellingItems, null, 2)}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: [{ text: prompt }],
     config: {
       responseMimeType: "application/json",
