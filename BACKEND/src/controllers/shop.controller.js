@@ -22,7 +22,7 @@ const updateShopProfile = asyncHandler(async(req,res)=>{
         throw new apiError(403,"only owner can update shop profile")
     }
 
-    const {shopName,address,taxId} = req.body
+    const {shopName,taxId} = req.body
     const { street, city, state, zipcode } = req.body.address;
 
     
