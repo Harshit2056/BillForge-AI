@@ -1,5 +1,5 @@
 import { Children, createContext, useState, useEffect } from "react";
-import { getCurrentUser, userLogin } from "../api/authApi";
+import { getCurrentUser, userLogin, userLogout } from "../api/authApi";
 
 export const AuthContext = createContext();
 
@@ -43,6 +43,18 @@ export const AuthProvider = ({children})=>{
             setUser(null)
         } finally{
             setLoading(false)
+        }
+    }
+
+    const logout = async()=>{
+        setLoading(true)
+        try {
+            const data = await userLogout()
+        } catch (error) {
+            console.log(error.message)
+            
+        }finally {
+            setUser(null)
         }
     }
 
