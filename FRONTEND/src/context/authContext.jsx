@@ -36,11 +36,12 @@ export const AuthProvider = ({children})=>{
         setLoading(true)
         try {
             const data=await userLogin({email,password})
-            setUser(data.data.loggedInUser)
+            if(data.data.loggedInUser){
+                setUser(data.data.loggedInUser)
+            }
             return true;
         } catch (error) {
             console.log(error.message)
-            setUser(null)
         } finally{
             setLoading(false)
         }
@@ -55,15 +56,12 @@ export const AuthProvider = ({children})=>{
             
         }finally {
             setUser(null)
+            setLoading(false)
         }
     }
 
-    
-
-
-
 return (
-    <AuthContext.Provider value={{user, setUser, loading, setLoading}}>
+    <AuthContext.Provider value={{user, setUser, loading, setLoading, login, logout}}>
         {children}
     </AuthContext.Provider>
 )
