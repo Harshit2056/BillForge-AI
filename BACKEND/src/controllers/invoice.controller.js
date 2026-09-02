@@ -1,5 +1,5 @@
 import { apiError } from "../utils/apiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";x
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import {Invoice} from "../models/invoice.model.js"
 import {Product} from "../models/product.model.js"
