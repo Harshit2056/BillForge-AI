@@ -12,6 +12,8 @@ import {
   Sliders,
   CheckCircle2,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const Inventory = () => {
@@ -19,6 +21,16 @@ export const Inventory = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [paginationMeta, setPaginationMeta] = useState({
+    totalDocs: 0,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -41,13 +53,27 @@ export const Inventory = () => {
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (pageNumber = page, pageLimit = limit) => {
     setLoading(true);
     try {
-      const res = await productService.getProducts({ limit: 100 });
-      if (res?.data?.docs) {
-        setProducts(res.data.docs);
-      }
+      const res = await productService.getProducts({
+        page: pageNumber,
+        limit: pageLimit,
+        search: searchQuery || undefined,
+        category: selectedCategory !== 'All' ? selectedCategory : undefined,
+      });
+
+      const responseData = res?.data?.data || res?.data?.result || res?.data || {};
+      const docs = responseData.docs || (Array.isArray(responseData) ? responseData : []);
+
+      setProducts(docs);
+      setPaginationMeta({
+        totalDocs: responseData.totalDocs || docs.length,
+        totalPages: responseData.totalPages || 1,
+        page: responseData.page || pageNumber,
+        hasPrevPage: responseData.hasPrevPage || false,
+        hasNextPage: responseData.hasNextPage || false,
+      });
     } catch (err) {
       toast.error('Failed to fetch inventory catalog.');
     } finally {
@@ -56,8 +82,8 @@ export const Inventory = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchProducts(page, limit);
+  }, [page, limit, selectedCategory, searchQuery]);
 
   const resetForm = () => {
     setFormData({
@@ -116,6 +142,7 @@ export const Inventory = () => {
     if (!stockAdjustmentModal) return;
     try {
       await productService.adjustStock(stockAdjustmentModal._id, {
+        quantity: Number(adjustAmount),
         adjustment: Number(adjustAmount),
       });
       toast.success(`Stock adjusted by ${adjustAmount} units.`);
@@ -307,6 +334,59 @@ export const Inventory = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="px-5 py-3.5 bg-slate-950/60 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-4 text-slate-400">
+              <span>
+                Showing <strong className="text-white">{products.length}</strong> of{' '}
+                <strong className="text-white">{paginationMeta.totalDocs}</strong> products
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">Per page:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400">
+                Page <strong className="text-white">{page}</strong> of{' '}
+                <strong className="text-white">{paginationMeta.totalPages}</strong>
+              </span>
+
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={!paginationMeta.hasPrevPage}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-200 transition-colors"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  disabled={!paginationMeta.hasNextPage}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-200 transition-colors"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -28,7 +28,7 @@ const createProduct= asyncHandler(async (req, res) => {
     })
 
     return res.status(201).json(
-        new apiResponse(true,product,"product created successfully")
+        new apiResponse(201,product,"product created successfully")
     )
 
 });
@@ -70,7 +70,7 @@ const getProducts= asyncHandler(async (req, res) => {
     return res.status(200).json(
         new apiResponse(
             200, 
-            {result},
+            result,
             "Products fetched successfully"
         )
     );
@@ -102,8 +102,8 @@ const getProductById = asyncHandler(async(req,res)=>{
 
 const updateProduct = asyncHandler(async(req,res)=>{
 
-    if(req.user.role !== "owner"){
-        throw new apiError(400,"only owner can update the products")
+    if(!["owner", "admin", "manager"].includes(req.user.role)){
+        throw new apiError(403,"only owner or manager can update the products")
     }
 
     const{name,price,lowStockThreshold,taxRate}=req.body;
@@ -146,15 +146,15 @@ const updateProduct = asyncHandler(async(req,res)=>{
 
 const adjustStockQuantity = asyncHandler(async (req, res) => {
 
-    if (req.user.role !== "owner") {
-        throw new ApiError(403, "Only owner can adjust stock");
+    if (!["owner", "admin", "manager"].includes(req.user.role)) {
+        throw new apiError(403, "Only owner or manager can adjust stock");
     }
 
     const { id } = req.params;
-    const { quantity, reason } = req.body;
+    const { quantity } = req.body;
 
     if (quantity === undefined || quantity === 0) {
-        throw new ApiError(400, "Valid quantity is required");
+        throw new apiError(400, "Valid quantity is required");
     }
 
     const product = await Product.findOneAndUpdate(
@@ -184,8 +184,7 @@ const adjustStockQuantity = asyncHandler(async (req, res) => {
         new apiResponse(
             200,
             {
-                product,
-                reason
+                product
             },
             "Stock quantity adjusted successfully"
         )
@@ -193,6 +192,10 @@ const adjustStockQuantity = asyncHandler(async (req, res) => {
 });
 
 const deleteProduct = asyncHandler(async(req,res)=>{
+
+    if (!["owner", "admin", "manager"].includes(req.user.role)) {
+        throw new apiError(403, "Only owner or manager can delete products");
+    }
     const {id}= req.params;
 
     const product = await Product.findOneAndUpdate(

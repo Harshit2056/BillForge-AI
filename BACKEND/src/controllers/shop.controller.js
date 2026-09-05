@@ -18,8 +18,8 @@ const getShopProfile = asyncHandler(async(req,res)=>{
 
 const updateShopProfile = asyncHandler(async(req,res)=>{
 
-    if(req.user.role !== "owner"){
-        throw new apiError(403,"only owner can update shop profile")
+    if(!["owner", "admin", "manager"].includes(req.user.role)){
+        throw new apiError(403,"only owner or manager can update shop profile")
     }
 
     const {shopName,taxId} = req.body
@@ -57,14 +57,14 @@ const updateShopProfile = asyncHandler(async(req,res)=>{
 
 const addStaffMember = asyncHandler(async(req,res)=>{
 
-    if(req.user.role !== "owner"){
-        throw new apiError(403,"only owner can add staff member")
+    if(!["owner", "admin", "manager"].includes(req.user.role)){
+        throw new apiError(403,"only owner or manager can add staff member")
     }
 
     const {name,email,password,role} = req.body
 
-    if(!name || !email || !password || !role){
-        throw new apiError(400,"name,email,password,role is required")
+    if(!name || !email || !password){
+        throw new apiError(400,"name,email,password is required")
     }
 
     const existingUser = await User.findOne({email:email})
@@ -72,12 +72,15 @@ const addStaffMember = asyncHandler(async(req,res)=>{
         throw new apiError(400,"user already exists")
     }
 
+    const userRole = role || "staff";
+
     const user = await User.create({
         name:name,
         email:email,
         password:password,
-        role:role,
-        shopId:req.shopId
+        role:userRole,
+        shopId:req.shopId,
+        isActive:true
     })
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken")
@@ -93,11 +96,15 @@ const addStaffMember = asyncHandler(async(req,res)=>{
 
 const getAllStaffMembers = asyncHandler(async(req,res)=>{
 
-    if(req.user.role !== "owner"){
-        throw new apiError(403,"only owner can get all staff members")
+    if(!["owner", "admin", "manager"].includes(req.user.role)){
+        throw new apiError(403,"only owner or manager can get all staff members")
     }
 
-    const staffMembers = await User.find({shopId:req.shopId,role:"staff"}).select("-password -refreshToken")
+    const staffMembers = await User.find({
+        shopId: req.shopId,
+        role: { $ne: "owner" },
+        isActive: true
+    }).select("-password -refreshToken")
 
     return res
     .status(200)
@@ -106,8 +113,8 @@ const getAllStaffMembers = asyncHandler(async(req,res)=>{
 
 const removeStaffMember = asyncHandler(async(req,res)=>{
 
-    if(req.user.role !== "owner"){
-        throw new apiError(403,"only owner can remove staff member")
+    if(!["owner", "admin", "manager"].includes(req.user.role)){
+        throw new apiError(403,"only owner or manager can remove staff member")
     }
 
     const {staffId} = req.params
@@ -116,7 +123,7 @@ const removeStaffMember = asyncHandler(async(req,res)=>{
     const staffMember = await User.findOneAndUpdate({
         _id:staffId,
         shopId:req.shopId,
-        role:"staff",
+        role: { $ne: "owner" },
         isActive: true
     },
     {

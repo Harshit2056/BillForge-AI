@@ -38,7 +38,8 @@ export const Settings = () => {
     setLoadingStaff(true);
     try {
       const res = await shopService.getStaff();
-      if (res?.data) setStaffList(res.data);
+      const list = res?.data?.data || res?.data || [];
+      if (Array.isArray(list)) setStaffList(list);
     } catch (err) {
       console.error('Failed to fetch staff members');
     } finally {
@@ -85,6 +86,7 @@ export const Settings = () => {
     try {
       await shopService.removeStaff(id);
       toast.success(`Removed ${name}`);
+      setStaffList((prev) => prev.filter((member) => member._id !== id));
       fetchStaff();
     } catch (err) {
       toast.error('Failed to remove staff.');

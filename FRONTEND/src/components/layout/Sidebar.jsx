@@ -12,7 +12,7 @@ import {
   Building2,
   ChevronRight,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/authContext';
 
 export const Sidebar = () => {
   const { user, shop, logout } = useAuth();

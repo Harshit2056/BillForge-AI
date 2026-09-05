@@ -36,9 +36,13 @@ export const POS = () => {
     setLoadingProducts(true);
     try {
       const res = await productService.getProducts({ limit: 100 });
-      if (res?.data?.docs) {
-        setProducts(res.data.docs);
-      }
+      const docs =
+        res?.data?.docs ||
+        res?.data?.result?.docs ||
+        res?.data?.data?.docs ||
+        res?.data?.data?.result?.docs ||
+        (Array.isArray(res?.data) ? res.data : []);
+      setProducts(docs);
     } catch (err) {
       toast.error('Failed to load product catalog.');
     } finally {
@@ -131,10 +135,19 @@ export const POS = () => {
       return;
     }
 
+    if (!customer.name || !customer.name.trim()) {
+      toast.error('Customer Name is mandatory to generate a bill.');
+      return;
+    }
+
     setCheckoutSubmitting(true);
     try {
       const payload = {
-        customer: customer.name ? customer : undefined,
+        customer: {
+          name: customer.name.trim(),
+          phone: customer.phone ? customer.phone.trim() : '',
+          email: customer.email ? customer.email.trim() : '',
+        },
         items: cart.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -328,10 +341,11 @@ export const POS = () => {
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="Customer Name (Optional)"
+                required
+                placeholder="Customer Name "
                 value={customer.name}
                 onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                className="w-full px-3 py-1.5 bg-slate-950/70 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500"
+                className="w-full px-3 py-1.5 bg-slate-950/70 border border-slate-800 focus:border-indigo-500 rounded-lg text-xs text-slate-200 placeholder-slate-500"
               />
               <input
                 type="text"

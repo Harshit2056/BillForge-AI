@@ -17,6 +17,15 @@ const createInvoice = asyncHandler(async (req, res) => {
     const { customer, items, paymentMode = "Cash", notes } = req.body;
 
     // Validate request payload
+    if (!customer || !customer.name || !customer.name.trim()) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: "Customer name is mandatory to generate an invoice."
+      });
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       await session.abortTransaction();
       session.endSession();
@@ -430,6 +439,7 @@ const getSalesAnalytics = asyncHandler(async(req,res)=>{
     // 1. Determine Date Range Filter
     let start = new Date();
     let end = new Date();
+    end.setHours(23, 59, 59, 999);
 
     if (startDate && endDate) {
       start = new Date(startDate);
@@ -441,19 +451,22 @@ const getSalesAnalytics = asyncHandler(async(req,res)=>{
       switch (period) {
         case "today":
           start.setHours(0, 0, 0, 0);
-          end.setHours(23, 59, 59, 999);
           break;
         case "7days":
           start.setDate(start.getDate() - 7);
+          start.setHours(0, 0, 0, 0);
           break;
         case "30days":
           start.setDate(start.getDate() - 30);
+          start.setHours(0, 0, 0, 0);
           break;
         case "1year":
           start.setFullYear(start.getFullYear() - 1);
+          start.setHours(0, 0, 0, 0);
           break;
         default:
           start.setDate(start.getDate() - 30);
+          start.setHours(0, 0, 0, 0);
       }
     }
 
@@ -539,26 +552,31 @@ const getSalesAnalytics = asyncHandler(async(req,res)=>{
       avgOrderValue: 0
     };
 
+    const calculatedTotalRevenue = Math.round((summaryData.totalRevenue || 0) * 100) / 100;
+    const calculatedTotalInvoices = summaryData.totalInvoices || 0;
+
     res.status(200).json(new apiResponse(200,{
+        totalRevenue: calculatedTotalRevenue,
+        totalInvoices: calculatedTotalInvoices,
         timeRange: {
           start,
           end,
           period
         },
         summary: {
-          totalRevenue: Math.round(summaryData.totalRevenue * 100) / 100,
-          netSales: Math.round(summaryData.netSales * 100) / 100,
-          totalTaxCollected: Math.round(summaryData.totalTaxCollected * 100) / 100,
-          totalInvoices: summaryData.totalInvoices,
-          avgOrderValue: Math.round(summaryData.avgOrderValue * 100) / 100
+          totalRevenue: calculatedTotalRevenue,
+          netSales: Math.round((summaryData.netSales || 0) * 100) / 100,
+          totalTaxCollected: Math.round((summaryData.totalTaxCollected || 0) * 100) / 100,
+          totalInvoices: calculatedTotalInvoices,
+          avgOrderValue: Math.round((summaryData.avgOrderValue || 0) * 100) / 100
         },
-        salesTrend: analyticsResult.salesTrend.map((trend) => ({
+        salesTrend: (analyticsResult.salesTrend || []).map((trend) => ({
           date: trend._id,
           revenue: Math.round(trend.revenue * 100) / 100,
           ordersCount: trend.ordersCount
         })),
-        paymentMethodBreakdown: analyticsResult.paymentMethodBreakdown,
-        topSellingProducts: analyticsResult.topSellingProducts
+        paymentMethodBreakdown: analyticsResult.paymentMethodBreakdown || [],
+        topSellingProducts: analyticsResult.topSellingProducts || []
     },"Sales analytics fetched successfully."));
   } catch (error) {
     throw new apiError(500,error.message || "Failed to fetch invoices");

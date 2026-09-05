@@ -1,6 +1,7 @@
 import mongoose, { mongo } from"mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { randomBytes, createHash } from "crypto"
 
 
 const userSchema = new mongoose.Schema({
@@ -31,7 +32,8 @@ const userSchema = new mongoose.Schema({
 
     role: {
         type: String,
-        enum: ["owner", "staff"],
+        enum: ["owner", "manager", "cashier", "admin", "staff"],
+        default: "staff"
     },
     isActive:{
         type:Boolean,
@@ -40,6 +42,12 @@ const userSchema = new mongoose.Schema({
     refreshToken:{
         type:String,
         default:null
+    },
+    resetPasswordToken: {
+        type: String
+    },
+    resetPasswordExpire: {
+        type: Date
     }
 },{timestamps:true})
 
@@ -77,6 +85,23 @@ userSchema.methods.generateAccessToken = async function(){
         }
     )
 }
+
+userSchema.methods.generateResetPasswordToken = function () {
+
+    // Random token generate 
+    const resetToken = randomBytes(32).toString("hex");
+
+    // Database me hash save 
+    this.resetPasswordToken = createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+    // 15 min expiry
+    this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+    // Original token return 
+    return resetToken;
+};
 
 
 export const User = mongoose.model("User",userSchema)

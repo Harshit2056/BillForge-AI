@@ -4,7 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { invoiceService } from '../services/invoice.service';
 import { productService } from '../services/product.service';
 import { aiService } from '../services/ai.service';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/authContext';
 import {
   DollarSign,
   Receipt,
@@ -53,12 +53,16 @@ export const Dashboard = () => {
 
       // 3. Fetch products to detect low stock
       const productsRes = await productService.getProducts({ limit: 50 });
-      if (productsRes?.data?.docs) {
-        const lowStock = productsRes.data.docs.filter(
-          (p) => p.stockQuantity <= p.lowStockThreshold
-        );
-        setLowStockProducts(lowStock);
-      }
+      const productDocs =
+        productsRes?.data?.docs ||
+        productsRes?.data?.result?.docs ||
+        productsRes?.data?.data?.docs ||
+        productsRes?.data?.data?.result?.docs ||
+        (Array.isArray(productsRes?.data) ? productsRes.data : []);
+      const lowStock = productDocs.filter(
+        (p) => p.stockQuantity <= p.lowStockThreshold
+      );
+      setLowStockProducts(lowStock);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -70,16 +74,36 @@ export const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Mock trend data for visualization if analytics data is loading/empty
-  const chartData = analytics?.dailySales || [
-    { name: 'Mon', revenue: 1200 },
-    { name: 'Tue', revenue: 1900 },
-    { name: 'Wed', revenue: 1500 },
-    { name: 'Thu', revenue: 2800 },
-    { name: 'Fri', revenue: 3200 },
-    { name: 'Sat', revenue: 4100 },
-    { name: 'Sun', revenue: 3700 },
-  ];
+  // Compute real sales trend chart data from analytics API
+  const chartData = React.useMemo(() => {
+    if (analytics?.salesTrend && analytics.salesTrend.length > 0) {
+      return analytics.salesTrend.map((item) => {
+        const parts = (item.date || '').split('-');
+        const dateObj = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(item.date);
+        const formattedDate = !isNaN(dateObj.getTime())
+          ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+          : item.date;
+        return {
+          name: formattedDate,
+          revenue: item.revenue || 0,
+          orders: item.ordersCount || 0,
+        };
+      });
+    }
+
+    // Default 7-day timeline if no sales recorded yet
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      last7Days.push({
+        name: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        revenue: 0,
+        orders: 0,
+      });
+    }
+    return last7Days;
+  }, [analytics]);
 
   return (
     <AppLayout title="Business Dashboard">
@@ -134,7 +158,7 @@ export const Dashboard = () => {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-extrabold text-white">
-                ₹{analytics?.totalRevenue ? analytics.totalRevenue.toLocaleString() : '0'}
+                ₹{(analytics?.summary?.totalRevenue ?? analytics?.totalRevenue ?? 0).toLocaleString()}
               </span>
               <div className="flex items-center gap-1 mt-1 text-emerald-400 text-xs font-medium">
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -153,7 +177,7 @@ export const Dashboard = () => {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-extrabold text-white">
-                {analytics?.totalInvoices || recentInvoices.length || 0}
+                {analytics?.summary?.totalInvoices ?? analytics?.totalInvoices ?? recentInvoices.length ?? 0}
               </span>
               <p className="text-xs text-slate-400 mt-1 font-medium">Completed customer bills</p>
             </div>

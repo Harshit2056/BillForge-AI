@@ -39,12 +39,22 @@ export const Analytics = () => {
     fetchAnalytics();
   }, []);
 
-  const paymentModesData = analytics?.paymentModes || [
-    { name: 'Cash', value: 45 },
-    { name: 'Card', value: 25 },
-    { name: 'UPI', value: 20 },
-    { name: 'Credit', value: 10 },
-  ];
+  const paymentModesData =
+    (analytics?.paymentMethodBreakdown && analytics.paymentMethodBreakdown.length > 0)
+      ? analytics.paymentMethodBreakdown.map((item) => ({
+          name: item._id,
+          value: item.totalAmount,
+        }))
+      : [
+          { name: 'Cash', value: 45 },
+          { name: 'Card', value: 25 },
+          { name: 'UPI', value: 20 },
+          { name: 'Credit', value: 10 },
+        ];
+
+  const totalRev = analytics?.summary?.totalRevenue ?? analytics?.totalRevenue ?? 0;
+  const totalInv = analytics?.summary?.totalInvoices ?? analytics?.totalInvoices ?? 0;
+  const avgTicket = analytics?.summary?.avgOrderValue ?? (totalInv > 0 ? Math.round(totalRev / totalInv) : 0);
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899'];
 
@@ -105,14 +115,14 @@ export const Analytics = () => {
                   <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
                     <span className="text-xs text-slate-400 font-semibold block uppercase">Total Gross Sales</span>
                     <span className="text-2xl font-extrabold text-emerald-400 mt-1 block">
-                      ₹{analytics?.totalRevenue ? analytics.totalRevenue.toLocaleString() : '0'}
+                      ₹{totalRev.toLocaleString()}
                     </span>
                   </div>
 
                   <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
                     <span className="text-xs text-slate-400 font-semibold block uppercase">Average Ticket Size</span>
                     <span className="text-2xl font-extrabold text-indigo-400 mt-1 block">
-                      ₹{analytics?.totalInvoices ? Math.round(analytics.totalRevenue / analytics.totalInvoices) : '0'}
+                      ₹{avgTicket.toLocaleString()}
                     </span>
                   </div>
                 </div>

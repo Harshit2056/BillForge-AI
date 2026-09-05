@@ -30,6 +30,7 @@ export const AIHub = () => {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
   const [showPipeline, setShowPipeline] = useState(false);
+  const [rawJsonView, setRawJsonView] = useState(false);
 
   // Forecast state
   const [forecastLoading, setForecastLoading] = useState(false);
@@ -307,18 +308,26 @@ export const AIHub = () => {
             {/* Query Results */}
             {queryResult && (
               <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div>
                     <h4 className="font-bold text-white text-sm">Query Results ({queryResult.resultsCount} items)</h4>
                     <p className="text-xs text-indigo-400 font-mono">Prompt: "{queryResult.query}"</p>
                   </div>
-                  <button
-                    onClick={() => setShowPipeline(!showPipeline)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-mono"
-                  >
-                    <Code2 className="w-3.5 h-3.5" />
-                    <span>{showPipeline ? 'Hide Mongo Pipeline' : 'Inspect Mongo Pipeline'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setRawJsonView(!rawJsonView)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-mono transition-colors"
+                    >
+                      {rawJsonView ? 'Show Formatted Table' : 'Show Raw JSON'}
+                    </button>
+                    <button
+                      onClick={() => setShowPipeline(!showPipeline)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-mono transition-colors"
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>{showPipeline ? 'Hide Mongo Pipeline' : 'Inspect Mongo Pipeline'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* MongoDB Pipeline Inspector */}
@@ -333,14 +342,67 @@ export const AIHub = () => {
                   </div>
                 )}
 
-                {/* Results JSON / Table View */}
+                {/* Results View: Formatted Table or Raw JSON */}
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto max-h-96">
-                  {Array.isArray(queryResult.results) && queryResult.results.length > 0 ? (
+                  {!Array.isArray(queryResult.results) || queryResult.results.length === 0 ? (
+                    <p className="text-xs text-slate-500 text-center py-6">No records matched the generated aggregation pipeline.</p>
+                  ) : rawJsonView ? (
                     <pre className="text-xs font-mono text-slate-200">
                       {JSON.stringify(queryResult.results, null, 2)}
                     </pre>
                   ) : (
-                    <p className="text-xs text-slate-500 text-center py-6">No records matched the generated aggregation pipeline.</p>
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 uppercase font-semibold bg-slate-900">
+                          {Object.keys(queryResult.results[0]).map((key) => (
+                            <th key={key} className="py-2.5 px-4 whitespace-nowrap">
+                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim()}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/80">
+                        {queryResult.results.map((row, rIdx) => (
+                          <tr key={rIdx} className="hover:bg-slate-900/60 transition-colors">
+                            {Object.keys(queryResult.results[0]).map((key) => {
+                              const val = row[key];
+                              const lowerKey = key.toLowerCase();
+                              const isQuantity =
+                                lowerKey.includes('quantity') ||
+                                lowerKey.includes('qty') ||
+                                lowerKey.includes('count') ||
+                                lowerKey.includes('units');
+                              const isCurrency =
+                                !isQuantity &&
+                                (lowerKey.includes('revenue') ||
+                                  lowerKey.includes('price') ||
+                                  lowerKey.includes('amount') ||
+                                  lowerKey.includes('subtotal') ||
+                                  lowerKey.includes('taxtotal') ||
+                                  lowerKey.includes('grandtotal'));
+
+                              return (
+                                <td key={key} className="py-3 px-4 whitespace-nowrap">
+                                  {val === null || val === undefined ? (
+                                    <span className="text-slate-500 font-mono text-[11px]">N/A</span>
+                                  ) : typeof val === 'number' ? (
+                                    isCurrency ? (
+                                      <span className="font-extrabold text-emerald-400">₹{val.toLocaleString()}</span>
+                                    ) : (
+                                      <span className="font-bold text-slate-200">{val.toLocaleString()}</span>
+                                    )
+                                  ) : typeof val === 'object' ? (
+                                    <pre className="text-[10px] font-mono">{JSON.stringify(val)}</pre>
+                                  ) : (
+                                    <span className="text-slate-200 font-medium">{String(val)}</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   )}
                 </div>
               </div>

@@ -60,12 +60,12 @@ export const parseReceiptImage = async (imageBuffer, mimeType = "image/jpeg") =>
  */
 export const generateMongoPipeline = async (userQuery, invoiceSchemaContext) => {
   const systemInstruction = `You are an expert MongoDB data engineer for a multi-tenant inventory SaaS.
-Convert user natural-language questions about sales, revenue, or invoices into a valid MongoDB aggregation pipeline array.
+  Convert user natural-language questions about sales, revenue, or invoices into a valid MongoDB aggregation pipeline array.
 
-CRITICAL RULES:
-1. Do NOT include tenant filter stages (shopId filtering is applied automatically by the backend).
-2. Use standard MongoDB aggregation operators ($match, $group, $sort, $project, $unwind, $facet).
-3. Return ONLY a JSON array representing the aggregation stages.
+  CRITICAL RULES:
+  1. Do NOT include tenant filter stages (shopId filtering is applied automatically by the backend).
+  2. Use standard MongoDB aggregation operators ($match, $group, $sort, $project, $unwind, $facet).
+  3. Return ONLY a JSON array representing the aggregation stages.
 
 Invoice Mongoose Schema Context:
 ${invoiceSchemaContext}`;
