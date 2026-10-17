@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { AppLayout } from '../components/layout/AppLayout';
-import { aiService } from '../services/ai.service';
-import { useToast } from '../context/ToastContext';
+import { AppLayout } from '../components/layout/AppLayout.jsx';
+import { aiService } from '../services/ai.service.js';
+import { useToast } from '../context/ToastContext.jsx';
 import {
   Sparkles,
   UploadCloud,
