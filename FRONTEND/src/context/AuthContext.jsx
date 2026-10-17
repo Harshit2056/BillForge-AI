@@ -15,6 +15,14 @@ export const AuthProvider = ({ children }) => {
   // Load user and shop profile on initial render
   useEffect(() => {
     const initAuth = async () => {
+      const savedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('accessToken');
+
+      if (!savedUser && !token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const userRes = await authService.getCurrentUser();
         if (userRes?.data) {
@@ -35,6 +43,7 @@ export const AuthProvider = ({ children }) => {
         console.warn('Initial auth check failed or user not logged in');
         setUser(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
       } finally {
         setLoading(false);
       }

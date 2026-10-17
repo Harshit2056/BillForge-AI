@@ -1,13 +1,21 @@
 import express from "express"
-
+import cors from "cors"
 import cookieParser from "cookie-parser"
 import helmet from "helmet"
 
-const app= express();
+const app = express();
+
+app.use(cors({
+    origin: (origin, callback) => callback(null, true),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
 
 app.use(cookieParser())
-app.use(helmet())
-
+app.use(helmet({
+    crossOriginResourcePolicy: false
+}))
 
 app.use(express.urlencoded({extended:true}))
 app.use(express.static("public",{extends:true}))

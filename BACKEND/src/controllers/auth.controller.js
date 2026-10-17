@@ -105,15 +105,20 @@ const userLogin = asyncHandler(async(req,res)=>{
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
-        httpOnly:true,
-        secure:true
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
     }
+
+    const userData = loggedInUser.toObject();
+    userData.accessToken = accessToken;
+    userData.refreshToken = refreshToken;
 
     return res
     .status(200)
     .cookie("refreshToken",refreshToken,options)
     .cookie("accessToken",accessToken,options)
-    .json(new apiResponse(200,loggedInUser,"user login successfully"))
+    .json(new apiResponse(200, userData, "user login successfully"))
     
 });
 
@@ -268,8 +273,9 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
     }
 
     const options = {
-        httpOnly:true,
-        secure:true
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
     }
     
     const {accessToken , refreshToken} = await generateTokens(user._id)
