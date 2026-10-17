@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Sparkles, Search, Bell } from 'lucide-react';
-import { useAuth } from '../../context/authContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const Navbar = ({ title = 'Dashboard' }) => {
   const { shop } = useAuth();

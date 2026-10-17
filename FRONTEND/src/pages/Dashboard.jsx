@@ -4,7 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { invoiceService } from '../services/invoice.service';
 import { productService } from '../services/product.service';
 import { aiService } from '../services/ai.service';
-import { useAuth } from '../context/authContext';
+import { useAuth } from '../context/AuthContext';
 import {
   DollarSign,
   Receipt,
