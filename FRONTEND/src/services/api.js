@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'https://billforge-ai-qxxp.onrender.com/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -31,7 +33,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await axios.post(
-          '/api/v1/auth/refresh-token',
+          `${API_BASE_URL}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
