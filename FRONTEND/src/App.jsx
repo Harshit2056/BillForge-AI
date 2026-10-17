@@ -1,6 +1,5 @@
-import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/authContext';
 import { ToastProvider } from './context/ToastContext';
 import { AppRoutes } from './routes/AppRoutes';
 
