@@ -112,8 +112,4 @@ npm run dev
 | **Manager** | Inventory management, invoice creation, analytics view, and staff operations. |
 | **Cashier / Staff** | Fast POS checkout, inventory lookups, and customer invoice generation. |
 
----
 
-## 📄 License
-
-This project is licensed under the **ISC License**.
