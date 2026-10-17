@@ -7,7 +7,13 @@ import { User } from "../models/user.model.js";
 
 export const verifyJWT = asyncHandler(async(req,res,next)=>{
     try {
-        const token = req.cookies.refreshToken || req.header("Authorization").replace("Bearer ","")
+        const authHeader = req.header("Authorization");
+
+        const token =
+        req.cookies?.refreshToken ||
+        (authHeader?.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : null);
     
         if(!token){
             throw new apiError(400,"token is required ")

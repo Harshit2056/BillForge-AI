@@ -243,8 +243,14 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async(req,res)=>{
-    const incomingRefreshToken = req.cookies.refreshToken || req.header("Authorization").replace("Bearer ","")
-    
+    const authHeader = req.header("Authorization");
+
+    const incomingRefreshToken =
+    req.cookies?.refreshToken ||
+    (authHeader?.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : null);
+        
     if(!incomingRefreshToken){
         throw new apiError(400,"token is required ")
     }
