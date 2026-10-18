@@ -23,7 +23,7 @@
 
 ## 🔗 Live Application Links
 
-- **Frontend (Web App)**: [https://bill-forge-ai-w1by-3sbzn6jj8-harshit2056s-projects.vercel.app](https://bill-forge-ai-w1by-3sbzn6jj8-harshit2056s-projects.vercel.app/)
+- **Frontend (Web App)**: [https://bill-forge-ai-w1by-3sbzn6jj8-harshit2056s-projects.vercel.app](bill-forge-ai.vercel.app)
 - **Backend (API Service)**: [https://billforge-ai-qxxp.onrender.com](https://billforge-ai-qxxp.onrender.com)
 
 ---
